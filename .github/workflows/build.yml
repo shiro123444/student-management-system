@@ -49,8 +49,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: 学生管理系统-${{ matrix.name }}
-        path: |
-          dist/*
+        path: dist/
         retention-days: 90
 
   release:
@@ -63,11 +62,9 @@ jobs:
       uses: actions/download-artifact@v4
 
     - name: 创建发布
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
-        files: |
-          学生管理系统-Windows/*
-          学生管理系统-macOS/*
+        files: '**/*'
         body: |
           ## 学生管理系统 ${{ github.ref_name }}
           
@@ -77,8 +74,8 @@ jobs:
           - 数据持久化存储
           
           ### 下载说明
-          - **Windows用户**: 下载 `.exe` 文件
-          - **Mac用户**: 下载 `.app` 文件
+          - **Windows用户**: 下载 `StudentManagementSystem.exe` 文件
+          - **Mac用户**: 下载 `学生管理系统.app` 文件
           
           ### 使用说明
           直接双击运行，无需安装Python环境。
