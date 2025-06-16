@@ -59,6 +59,7 @@ class StudentManager(QObject):
     
     @pyqtSlot(str, result=QVariant)
     def get_student(self, student_id):
+        conn = None
         try:
             conn = sqlite3.connect(self.db_file)
             c = conn.cursor()
@@ -83,49 +84,122 @@ class StudentManager(QObject):
                 return None
         except Exception as e:
             print(f"Error getting student: {e}")
-            return None    @pyqtSlot(QVariant, result=bool)
+            if conn:
+                try:
+                    conn.close()
+                except:
+                    pass
+            return None
+    
+    @pyqtSlot(QVariant, result=bool)
     def add_student(self, student_data):
+        conn = None
         try:
             # 将 QJSValue 转换为 Python 字典
             data = {}
-            if 'id' in student_data:
-                data['id'] = student_data['id']
-            if 'name' in student_data:
-                data['name'] = student_data['name']
-            if 'gender' in student_data:
-                data['gender'] = student_data['gender']
-            if 'age' in student_data:
-                data['age'] = student_data['age']
-            if 'department' in student_data:
-                data['department'] = student_data['department']
-              # 处理成绩数据
-            scores = {}
-            if 'scores' in student_data:
-                scores_obj = student_data['scores']
-                print(f"处理成绩数据 - 原始对象: {scores_obj}, 类型: {type(scores_obj)}")
-                
-                # 处理不同类型的成绩数据
-                if isinstance(scores_obj, dict):
-                    scores = scores_obj  # 如果已经是字典直接使用
-                else:
-                    # 如果是 QJSValue 对象，尝试遍历其键值对
-                    for subject in scores_obj.keys():
-                        try:
-                            scores[subject] = float(scores_obj[subject])  # 确保分数是数字
-                            print(f"添加成绩: {subject} = {scores[subject]}")
-                        except Exception as e:
-                            print(f"处理成绩时出错: {e}")
-                
-            data['scores'] = scores
-            print(f"最终成绩数据: {data['scores']}")
             
-            print(f"添加学生: {data['name']}, 成绩数据: {data['scores']}")
+            # 更安全的数据提取方式
+            if isinstance(student_data, dict):
+                # 如果已经是字典，直接使用
+                data = {
+                    'id': str(student_data.get('id', '')),
+                    'name': str(student_data.get('name', '')),
+                    'gender': str(student_data.get('gender', '')),
+                    'age': int(student_data.get('age', 18)),
+                    'department': str(student_data.get('department', '')),
+                    'scores': student_data.get('scores', {})
+                }
+            else:
+                # 处理QJSValue类型 - 需要使用toVariant()方法
+                try:
+                    if hasattr(student_data, 'toVariant'):
+                        variant_data = student_data.toVariant()
+                        
+                        if isinstance(variant_data, dict):
+                            data = {
+                                'id': str(variant_data.get('id', '')),
+                                'name': str(variant_data.get('name', '')),
+                                'gender': str(variant_data.get('gender', '')),
+                                'age': int(variant_data.get('age', 18)),
+                                'department': str(variant_data.get('department', '')),
+                                'scores': variant_data.get('scores', {})
+                            }
+                        else:
+                            # 尝试直接属性访问
+                            data = {
+                                'id': str(variant_data) if hasattr(variant_data, '__str__') else '',
+                                'name': '',
+                                'gender': '',
+                                'age': 18,
+                                'department': '',
+                                'scores': {}
+                            }
+                    else:
+                        data = {
+                            'id': '',
+                            'name': '',
+                            'gender': '',
+                            'age': 18,
+                            'department': '',
+                            'scores': {}
+                        }
+                except Exception as e:
+                    print(f"处理QJSValue时出错: {e}")
+                    # 尝试其他方法
+                    try:
+                        # 尝试逐个属性获取
+                        from PyQt5.QtQml import qmlRegisterType
+                        data = {}
+                        
+                        # 尝试使用property方法
+                        for prop in ['id', 'name', 'gender', 'age', 'department', 'scores']:
+                            try:
+                                if hasattr(student_data, 'property'):
+                                    value = student_data.property(prop)
+                                    if prop == 'age':
+                                        data[prop] = int(value) if value else 18
+                                    elif prop == 'scores':
+                                        data[prop] = value if isinstance(value, dict) else {}
+                                    else:
+                                        data[prop] = str(value) if value else ''
+                                else:
+                                    data[prop] = '' if prop != 'age' and prop != 'scores' else (18 if prop == 'age' else {})
+                            except Exception as prop_error:
+                                print(f"获取属性 {prop} 时出错: {prop_error}")
+                                data[prop] = '' if prop != 'age' and prop != 'scores' else (18 if prop == 'age' else {})
+                                
+                    except Exception as fallback_error:
+                        print(f"备用方法也失败了: {fallback_error}")
+                        data = {
+                            'id': '',
+                            'name': '',
+                            'gender': '',
+                            'age': 18,
+                            'department': '',
+                            'scores': {}
+                        }
+            
+            # 验证必要字段
+            if not data['id'] or not data['name']:
+                print(f"数据验证失败 - ID: '{data['id']}', Name: '{data['name']}'")
+                return False
+            
+            # 检查学生ID是否已存在
             conn = sqlite3.connect(self.db_file)
             c = conn.cursor()
+            c.execute("SELECT id FROM students WHERE id = ?", (data['id'],))
+            existing_record = c.fetchone()
+            if existing_record:
+                print(f"学生ID '{data['id']}' 已存在")
+                conn.close()
+                return False
             
             now = datetime.now().isoformat()
-            scores_json = json.dumps(data['scores'])
-            print(f"转换后的成绩JSON: {scores_json}")
+            # 确保scores是有效的字典
+            scores = data['scores']
+            if not isinstance(scores, dict):
+                scores = {}
+            scores_json = json.dumps(scores)
             c.execute('''INSERT INTO students 
                          (id, name, gender, age, department, scores, created_at, updated_at)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
@@ -135,7 +209,8 @@ class StudentManager(QObject):
                       data['age'], 
                       data['department'], 
                       scores_json,
-                      now,                      now))
+                      now,
+                      now))
             conn.commit()
             conn.close()
             self.studentsUpdated.emit()
@@ -143,6 +218,11 @@ class StudentManager(QObject):
             return True
         except Exception as e:
             print(f"Error adding student: {e}")
+            if conn:
+                try:
+                    conn.close()
+                except:
+                    pass
             return False
     
     @pyqtSlot(str, QVariant, result=bool)
@@ -259,8 +339,9 @@ class StudentManager(QObject):
             if row:
                 scores = json.loads(row[0]) if row[0] else {}
                 
-                # 删除成绩                if subject in scores:
-                del scores[subject]
+                # 删除成绩
+                if subject in scores:
+                    del scores[subject]
                 
                 # 更新数据库
                 now = datetime.now().isoformat()

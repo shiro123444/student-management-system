@@ -62,7 +62,7 @@ ApplicationWindow {
         }
         
         Text {
-            text: "学生管理系统 - 可编辑版"
+            text: "学生管理系统"
             font.pixelSize: 22
             font.weight: Font.Medium
             color: textColor
@@ -158,21 +158,7 @@ ApplicationWindow {
             Button {
                 text: "成绩统计"
                 onClicked: {
-                    // 先刷新数据，再获取统计数据
-                    var students = studentManager.get_all_students();
-                    if (students && students.length) {
-                        // 清空当前模型
-                        studentModel.clear();
-                        
-                        // 添加从数据库加载的学生
-                        for (var i = 0; i < students.length; i++) {
-                            studentModel.append(students[i]);
-                        }
-                    }
-                    
-                    // 获取统计数据
-                    var stats = studentManager.get_statistics();
-                    statisticsDialog.statistics = stats;
+                    // 直接打开对话框，让onOpened事件处理统计数据获取
                     statisticsDialog.open();
                 }
                 
@@ -283,6 +269,14 @@ ApplicationWindow {
                 border.color: borderColor
                 border.width: 1
                 
+                // 安全的属性定义
+                property string studentId: model ? (model.id || "") : ""
+                property string studentName: model ? (model.name || "") : ""
+                property string studentGender: model ? (model.gender || "") : ""
+                property var studentAge: model ? (model.age || 18) : 18
+                property string studentDepartment: model ? (model.department || "") : ""
+                property var studentScores: model ? (model.scores || {}) : {}
+                
                 // 设置阴影
                 layer.enabled: true
                 layer.effect: DropShadow {
@@ -298,9 +292,23 @@ ApplicationWindow {
                     anchors.fill: parent
                     onClicked: {
                         // 将学生数据传递给详情对话框并打开
-                        studentDetailDialog.studentData = model
-                        studentDetailDialog.originalId = model.id
-                        studentDetailDialog.open()
+                        console.log("列表项点击 - 索引:", index)
+                        try {
+                            var studentData = {
+                                id: studentId,
+                                name: studentName,
+                                gender: studentGender,
+                                age: studentAge,
+                                department: studentDepartment,
+                                scores: studentScores
+                            };
+                            console.log("处理后的学生数据:", JSON.stringify(studentData))
+                            studentDetailDialog.studentData = studentData
+                            studentDetailDialog.originalId = studentData.id
+                            studentDetailDialog.open()
+                        } catch (e) {
+                            console.log("列表项点击错误:", e.toString())
+                        }
                     }
                 }
                 
@@ -319,7 +327,7 @@ ApplicationWindow {
                         
                         Text {
                             anchors.centerIn: parent
-                            text: model.name ? model.name.charAt(0) : ""
+                            text: studentName ? studentName.charAt(0) : ""
                             color: "white"
                             font.pixelSize: 20
                             font.weight: Font.Bold
@@ -332,14 +340,14 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         
                         Text {
-                            text: model.name || ""
+                            text: studentName
                             font.pixelSize: 16
                             font.weight: Font.Medium
                             color: textColor
                         }
                         
                         Text {
-                            text: "学号: " + (model.id || "")
+                            text: "学号: " + studentId
                             font.pixelSize: 12
                             color: Qt.rgba(0, 0, 0, 0.6)
                         }
@@ -350,7 +358,7 @@ ApplicationWindow {
                         spacing: 5
                         
                         Text {
-                            text: model.department || ""
+                            text: studentDepartment
                             font.pixelSize: 14
                             color: Qt.rgba(0, 0, 0, 0.6)
                         }
@@ -359,14 +367,14 @@ ApplicationWindow {
                             spacing: 5
                             
                             Text {
-                                text: (model.gender || "") + ", " + (model.age || "") + "岁"
+                                text: studentGender + ", " + studentAge + "岁"
                                 font.pixelSize: 12
                                 color: Qt.rgba(0, 0, 0, 0.5)
                             }
                             
                             // 显示成绩数量
                             Text {
-                                property var scores: model.scores || {}
+                                property var scores: studentScores
                                 property int scoreCount: {
                                     var count = 0;
                                     for (var key in scores) {
@@ -412,10 +420,24 @@ ApplicationWindow {
                         }
                         
                         onClicked: {
-                            studentDetailDialog.studentData = model
-                            studentDetailDialog.originalId = model.id
-                            studentDetailDialog.isEditMode = true
-                            studentDetailDialog.open()
+                            console.log("编辑按钮点击 - 索引:", index)
+                            try {
+                                var studentData = {
+                                    id: studentId,
+                                    name: studentName,
+                                    gender: studentGender,
+                                    age: studentAge,
+                                    department: studentDepartment,
+                                    scores: studentScores
+                                };
+                                console.log("处理后的学生数据:", JSON.stringify(studentData))
+                                studentDetailDialog.studentData = studentData
+                                studentDetailDialog.originalId = studentData.id
+                                studentDetailDialog.isEditMode = true
+                                studentDetailDialog.open()
+                            } catch (e) {
+                                console.log("编辑按钮点击错误:", e.toString())
+                            }
                         }
                     }
                 }
@@ -502,7 +524,8 @@ ApplicationWindow {
                         columns: 3
                         columnSpacing: 10
                         rowSpacing: 10
-                        width: parent.width
+                        anchors.fill: parent
+                        anchors.margins: 10
                         
                         // 科目1
                         TextField {
@@ -520,7 +543,7 @@ ApplicationWindow {
                         }
                         
                         Text {
-                            text: studentManager.calculate_grade(score1Field.value)
+                            text: studentManager ? studentManager.calculate_grade(score1Field.value) : "N/A"
                             color: {
                                 if (score1Field.value >= 90) return "#4CAF50" // 绿色
                                 if (score1Field.value >= 80) return "#8BC34A" // 浅绿
@@ -547,7 +570,7 @@ ApplicationWindow {
                         }
                         
                         Text {
-                            text: studentManager.calculate_grade(score2Field.value)
+                            text: studentManager ? studentManager.calculate_grade(score2Field.value) : "N/A"
                             color: {
                                 if (score2Field.value >= 90) return "#4CAF50"
                                 if (score2Field.value >= 80) return "#8BC34A"
@@ -574,7 +597,7 @@ ApplicationWindow {
                         }
                         
                         Text {
-                            text: studentManager.calculate_grade(score3Field.value)
+                            text: studentManager ? studentManager.calculate_grade(score3Field.value) : "N/A"
                             color: {
                                 if (score3Field.value >= 90) return "#4CAF50"
                                 if (score3Field.value >= 80) return "#8BC34A"
@@ -631,6 +654,17 @@ ApplicationWindow {
                                 return
                             }
                             
+                            // 检查学号是否已存在
+                            for (var i = 0; i < studentModel.count; i++) {
+                                var existingStudent = studentModel.get(i);
+                                if (existingStudent.id === idField.text) {
+                                    notificationText.text = "学号 " + idField.text + " 已存在，请使用不同的学号"
+                                    notificationColor = dangerColor
+                                    notificationAnim.start()
+                                    return
+                                }
+                            }
+                            
                             // 创建学生数据
                             var scores = {};
                             
@@ -656,14 +690,27 @@ ApplicationWindow {
                                 scores: scores
                             };
                             
-                            // 添加到模型中
-                            studentModel.append(studentData);
+
                             
                             // 尝试保存到数据库
                             try {
-                                studentManager.add_student(studentData);
+                                var success = studentManager.add_student(studentData);
+                                if (success) {
+                                    // 只有数据库保存成功才添加到模型中
+                                    studentModel.append(studentData);
+                                    console.log("学生数据保存成功:", JSON.stringify(studentData));
+                                } else {
+                                    notificationText.text = "保存失败，学号可能已存在，请使用不同的学号"
+                                    notificationColor = dangerColor
+                                    notificationAnim.start()
+                                    return;
+                                }
                             } catch (e) {
                                 console.log("保存到数据库失败:", e);
+                                notificationText.text = "保存失败: " + e.toString()
+                                notificationColor = dangerColor
+                                notificationAnim.start()
+                                return;
                             }
                             
                             // 显示成功通知
@@ -704,6 +751,25 @@ ApplicationWindow {
         property var studentData: ({})
         property string originalId: ""
         property bool isEditMode: false
+        
+        signal dataUpdated()
+        
+        function fillEditForm() {
+            if (studentData && isEditMode) {
+                console.log("填充编辑表单:", JSON.stringify(studentData))
+                editIdField.text = studentData.id || ""
+                editNameField.text = studentData.name || ""
+                editGenderField.currentIndex = studentData.gender === "女" ? 1 : 0
+                editAgeField.value = studentData.age || 18
+                editDepartmentField.text = studentData.department || ""
+            }
+        }
+        
+        onOpened: {
+            // 每次打开对话框时填充编辑表单
+            console.log("对话框打开 - 当前studentData:", JSON.stringify(studentData))
+            fillEditForm()
+        }
         
         onClosed: {
             isEditMode = false
@@ -755,7 +821,6 @@ ApplicationWindow {
                             Text { text: "学号:" }
                             TextField { 
                                 id: editIdField
-                                text: studentDetailDialog.studentData.id || ""
                                 Layout.fillWidth: true 
                                 placeholderText: "请输入学号"
                             }
@@ -763,7 +828,6 @@ ApplicationWindow {
                             Text { text: "姓名:" }
                             TextField { 
                                 id: editNameField
-                                text: studentDetailDialog.studentData.name || ""
                                 Layout.fillWidth: true 
                                 placeholderText: "请输入姓名"
                             }
@@ -772,7 +836,6 @@ ApplicationWindow {
                             ComboBox { 
                                 id: editGenderField
                                 model: ["男", "女"]
-                                currentIndex: studentDetailDialog.studentData.gender === "女" ? 1 : 0
                                 Layout.fillWidth: true 
                             }
                             
@@ -781,14 +844,12 @@ ApplicationWindow {
                                 id: editAgeField
                                 from: 16
                                 to: 30
-                                value: studentDetailDialog.studentData.age || 18
                                 Layout.fillWidth: true 
                             }
                             
                             Text { text: "院系:" }
                             TextField { 
                                 id: editDepartmentField
-                                text: studentDetailDialog.studentData.department || ""
                                 Layout.fillWidth: true 
                                 placeholderText: "请输入院系"
                             }
@@ -898,7 +959,9 @@ ApplicationWindow {
                             }
                             
                             onClicked: {
+                                // 切换到编辑模式并填充表单
                                 studentDetailDialog.isEditMode = true
+                                studentDetailDialog.fillEditForm()
                             }
                         }
                     }
@@ -1281,13 +1344,19 @@ ApplicationWindow {
                             } else {
                                 // 正常更新
                                 try {
-                                    // 删除id字段，因为id作为主键不能被更新
-                                    delete updateData.id;
+                                    // 创建一个不包含id的更新数据副本
+                                    var updateDataForDB = {
+                                        name: updateData.name,
+                                        gender: updateData.gender,
+                                        age: updateData.age,
+                                        department: updateData.department,
+                                        scores: updateData.scores
+                                    };
                                     
                                     // 更新数据库
-                                    studentManager.update_student(studentDetailDialog.originalId, updateData);
+                                    studentManager.update_student(studentDetailDialog.originalId, updateDataForDB);
                                     
-                                    // 更新模型
+                                    // 更新模型 - 使用完整的updateData（包含id）
                                     for (var i = 0; i < studentModel.count; i++) {
                                         if (studentModel.get(i).id === studentDetailDialog.originalId) {
                                             for (var key in updateData) {
@@ -1335,6 +1404,8 @@ ApplicationWindow {
                         }
                         
                         onClicked: {
+                            // 重置表单数据为原始值并退出编辑模式
+                            studentDetailDialog.fillEditForm()
                             studentDetailDialog.isEditMode = false;
                         }
                     }
@@ -1570,6 +1641,7 @@ ApplicationWindow {
                                     var updatedStudent = studentManager.get_student(deleteScoreConfirmationDialog.studentId)
                                     if (updatedStudent) {
                                         studentDetailDialog.studentData = updatedStudent
+                                        studentDetailDialog.fillEditForm()
                                     }
                                 }
                                 
@@ -1678,7 +1750,7 @@ ApplicationWindow {
                     
                     Text { text: "等级:" }
                     Text { 
-                        text: studentManager.calculate_grade(scoreField.value)
+                        text: studentManager ? studentManager.calculate_grade(scoreField.value) : "N/A"
                         font.bold: true
                         color: {
                             if (scoreField.value >= 90) return "#4CAF50"
@@ -1758,6 +1830,7 @@ ApplicationWindow {
                                     var updatedStudent = studentManager.get_student(addScoreDialog.studentId)
                                     if (updatedStudent) {
                                         studentDetailDialog.studentData = updatedStudent
+                                        studentDetailDialog.fillEditForm()
                                     }
                                 }
                                 
@@ -1806,42 +1879,46 @@ ApplicationWindow {
     }
     
     // 通知文本
-    Text {
-        id: notificationText
-        text: ""
-        color: "white"
-        font.pixelSize: 14
-        padding: 15
-        horizontalAlignment: Text.AlignHCenter
+    Rectangle {
+        id: notificationContainer
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 50
+        width: notificationText.contentWidth + 30
+        height: notificationText.contentHeight + 20
+        radius: 8
+        color: notificationColor
+        opacity: 0
+        z: 1000  // 确保在最顶层
         
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: -15
-            radius: 8
-            color: notificationColor
-            opacity: 0
+        Text {
+            id: notificationText
+            text: ""
+            color: "white"
+            font.pixelSize: 14
+            font.family: "Microsoft YaHei, SimHei, Arial"  // 指定支持中文的字体
+            anchors.centerIn: parent
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+        
+        // 定义动画
+        SequentialAnimation on opacity {
+            id: notificationAnim
+            running: false
             
-            // 定义动画
-            SequentialAnimation on opacity {
-                id: notificationAnim
-                running: false
-                
-                NumberAnimation {
-                    to: 1
-                    duration: 300
-                }
-                
-                PauseAnimation {
-                    duration: 2000
-                }
-                
-                NumberAnimation {
-                    to: 0
-                    duration: 300
-                }
+            NumberAnimation {
+                to: 1
+                duration: 300
+            }
+            
+            PauseAnimation {
+                duration: 2000
+            }
+            
+            NumberAnimation {
+                to: 0
+                duration: 300
             }
         }
     }
@@ -1874,13 +1951,18 @@ ApplicationWindow {
     Dialog {
         id: statisticsDialog
         title: "成绩统计"
-        width: 900
-        height: 700
+        width: 1000
+        height: 800
         anchors.centerIn: parent
         modal: true
         closePolicy: Popup.CloseOnEscape
         
-        // 对话框背景
+        property var statistics: ({})
+        
+        onOpened: {
+            statistics = studentManager.get_statistics();
+        }
+        
         background: Rectangle {
             radius: 8
             color: cardColor
@@ -1888,483 +1970,506 @@ ApplicationWindow {
             border.width: 1
         }
         
-        property var statistics: ({})        // 每次打开时刷新统计数据
-        onOpened: {
-            statistics = studentManager.get_statistics();
-        }
-        
-        // 统计内容
-        contentItem: Item {
-            ScrollView {
-                anchors.fill: parent
-                clip: true
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                ScrollBar.vertical.policy: ScrollBar.AsNeeded
+        contentItem: ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 20
+            spacing: 20
+            
+            // 总体统计卡片
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 140
+                radius: 8
+                color: Qt.rgba(0.97, 0.97, 0.99, 1.0)
+                border.color: borderColor
+                border.width: 1
                 
                 ColumnLayout {
-                    width: parent.width - 40
-                    anchors.margins: 20
-                    anchors.top: parent.top                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    spacing: 20
+                    anchors.fill: parent
+                    anchors.margins: 15
+                    spacing: 10
                     
-                    // 总体统计卡片
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 150
-                    radius: 8
-                    color: Qt.rgba(0.97, 0.97, 0.99, 1.0)
-                    border.color: borderColor
-                    border.width: 1
+                    Text {
+                        text: "总体统计"
+                        font.pixelSize: 18
+                        font.weight: Font.Bold
+                        color: textColor
+                    }
                     
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 15
-                        spacing: 10
+                    GridLayout {
+                        columns: 7
+                        Layout.fillWidth: true
+                        columnSpacing: 10
+                        rowSpacing: 10
                         
-                        Text {
-                            text: "总体统计"
-                            font.pixelSize: 18
-                            font.weight: Font.Bold
-                            color: textColor
+                        // 学生总数
+                        Rectangle {
+                            Layout.preferredWidth: 110
+                            Layout.preferredHeight: 80
+                            radius: 6
+                            color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
+                            
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 5
+                                
+                                Text {
+                                    text: "学生总数"
+                                    font.pixelSize: 12
+                                    color: Qt.rgba(0, 0, 0, 0.6)
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                                
+                                Text {
+                                    text: statisticsDialog.statistics.totalStudents || 0
+                                    font.pixelSize: 22
+                                    font.weight: Font.Bold
+                                    color: accentColor
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                            }
                         }
-                          // 总体统计数据
-                        GridLayout {
-                            columns: 7  // 改为7列，增加每行显示的卡片数量
-                            Layout.fillWidth: true
-                            columnSpacing: 15  // 减小列间距，让卡片可以放更多
-                            rowSpacing: 15
-                              // 学生总数
-                            Rectangle {
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 80
-                                radius: 6
-                                color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
-                                border.color: Qt.rgba(0, 0, 0, 0.1)
+                        
+                        // 科目总数
+                        Rectangle {
+                            Layout.preferredWidth: 110
+                            Layout.preferredHeight: 80
+                            radius: 6
+                            color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
+                            
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 5
                                 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    
-                                    Text {
-                                        text: "学生总数"
-                                        font.pixelSize: 12
-                                        color: Qt.rgba(0, 0, 0, 0.6)
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
-                                    
-                                    Text {
-                                        text: statisticsDialog.statistics.totalStudents || 0
-                                        font.pixelSize: 22
-                                        font.weight: Font.Bold
-                                        color: accentColor
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
+                                Text {
+                                    text: "科目总数"
+                                    font.pixelSize: 12
+                                    color: Qt.rgba(0, 0, 0, 0.6)
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                                
+                                Text {
+                                    text: statisticsDialog.statistics.totalSubjects || 0
+                                    font.pixelSize: 22
+                                    font.weight: Font.Bold
+                                    color: warningColor
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                 }
                             }
-                              // 科目总数
-                            Rectangle {
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 80
-                                radius: 6
-                                color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
-                                border.color: Qt.rgba(0, 0, 0, 0.1)
+                        }
+                        
+                        // 平均分
+                        Rectangle {
+                            Layout.preferredWidth: 110
+                            Layout.preferredHeight: 80
+                            radius: 6
+                            color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
+                            
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 5
                                 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    
-                                    Text {
-                                        text: "科目总数"
-                                        font.pixelSize: 12
-                                        color: Qt.rgba(0, 0, 0, 0.6)
-                                        anchors.horizontalCenter: parent.horizontalCenter
+                                Text {
+                                    text: "平均分"
+                                    font.pixelSize: 12
+                                    color: Qt.rgba(0, 0, 0, 0.6)
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                                
+                                Text {
+                                    text: (statisticsDialog.statistics.averageScore || 0).toFixed(1)
+                                    font.pixelSize: 22
+                                    font.weight: Font.Bold
+                                    color: {
+                                        var avg = statisticsDialog.statistics.averageScore || 0;
+                                        if (avg >= 90) return "#4CAF50";
+                                        if (avg >= 80) return "#8BC34A";
+                                        if (avg >= 70) return "#FFC107";
+                                        if (avg >= 60) return "#FF9800";
+                                        return "#F44336";
                                     }
-                                    
-                                    Text {
-                                        text: statisticsDialog.statistics.totalSubjects || 0
-                                        font.pixelSize: 22
-                                        font.weight: Font.Bold
-                                        color: warningColor
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                 }
                             }
-                              // 平均分
-                            Rectangle {
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 80
-                                radius: 6
-                                color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
-                                border.color: Qt.rgba(0, 0, 0, 0.1)
+                        }
+                        
+                        // 最高分
+                        Rectangle {
+                            Layout.preferredWidth: 110
+                            Layout.preferredHeight: 80
+                            radius: 6
+                            color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
+                            
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 5
                                 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    
-                                    Text {
-                                        text: "平均分"
-                                        font.pixelSize: 12
-                                        color: Qt.rgba(0, 0, 0, 0.6)
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
-                                    
-                                    Text {
-                                        text: (statisticsDialog.statistics.averageScore || 0).toFixed(1)
-                                        font.pixelSize: 22
-                                        font.weight: Font.Bold
-                                        color: {
-                                            var avg = statisticsDialog.statistics.averageScore || 0;
-                                            if (avg >= 90) return "#4CAF50";
-                                            if (avg >= 80) return "#8BC34A";
-                                            if (avg >= 70) return "#FFC107";
-                                            if (avg >= 60) return "#FF9800";
-                                            return "#F44336";
-                                        }
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
+                                Text {
+                                    text: "最高分"
+                                    font.pixelSize: 12
+                                    color: Qt.rgba(0, 0, 0, 0.6)
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                                
+                                Text {
+                                    text: statisticsDialog.statistics.highestScore || 0
+                                    font.pixelSize: 22
+                                    font.weight: Font.Bold
+                                    color: "#4CAF50"
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                 }
                             }
-                              // 最高分
-                            Rectangle {
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 80
-                                radius: 6
-                                color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
-                                border.color: Qt.rgba(0, 0, 0, 0.1)
+                        }
+                        
+                        // 最低分
+                        Rectangle {
+                            Layout.preferredWidth: 110
+                            Layout.preferredHeight: 80
+                            radius: 6
+                            color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
+                            
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 5
                                 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    
-                                    Text {
-                                        text: "最高分"
-                                        font.pixelSize: 12
-                                        color: Qt.rgba(0, 0, 0, 0.6)
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
-                                    
-                                    Text {
-                                        text: statisticsDialog.statistics.highestScore || 0
-                                        font.pixelSize: 22
-                                        font.weight: Font.Bold
-                                        color: "#4CAF50"
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
+                                Text {
+                                    text: "最低分"
+                                    font.pixelSize: 12
+                                    color: Qt.rgba(0, 0, 0, 0.6)
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                                
+                                Text {
+                                    text: statisticsDialog.statistics.lowestScore || 100
+                                    font.pixelSize: 22
+                                    font.weight: Font.Bold
+                                    color: "#F44336"
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                 }
                             }
-                              // 最低分
-                            Rectangle {
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 80
-                                radius: 6
-                                color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
-                                border.color: Qt.rgba(0, 0, 0, 0.1)
+                        }
+                        
+                        // 及格率
+                        Rectangle {
+                            Layout.preferredWidth: 110
+                            Layout.preferredHeight: 80
+                            radius: 6
+                            color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
+                            
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 5
                                 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    
-                                    Text {
-                                        text: "最低分"
-                                        font.pixelSize: 12
-                                        color: Qt.rgba(0, 0, 0, 0.6)
-                                        anchors.horizontalCenter: parent.horizontalCenter
+                                Text {
+                                    text: "及格率"
+                                    font.pixelSize: 12
+                                    color: Qt.rgba(0, 0, 0, 0.6)
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
+                                
+                                Text {
+                                    text: (statisticsDialog.statistics.passRate || 0).toFixed(1) + "%"
+                                    font.pixelSize: 22
+                                    font.weight: Font.Bold
+                                    color: {
+                                        var rate = statisticsDialog.statistics.passRate || 0;
+                                        if (rate >= 90) return "#4CAF50";
+                                        if (rate >= 80) return "#8BC34A";
+                                        if (rate >= 60) return "#FFC107";
+                                        if (rate >= 40) return "#FF9800";
+                                        return "#F44336";
                                     }
-                                    
-                                    Text {
-                                        text: statisticsDialog.statistics.lowestScore || 0
-                                        font.pixelSize: 22
-                                        font.weight: Font.Bold
-                                        color: "#F44336"
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                 }
                             }
-                              // 及格率
-                            Rectangle {
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 80
-                                radius: 6
-                                color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
-                                border.color: Qt.rgba(0, 0, 0, 0.1)
+                        }
+                        
+                        // 成绩总数
+                        Rectangle {
+                            Layout.preferredWidth: 110
+                            Layout.preferredHeight: 80
+                            radius: 6
+                            color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
+                            
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 5
                                 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    
-                                    Text {
-                                        text: "及格率"
-                                        font.pixelSize: 12
-                                        color: Qt.rgba(0, 0, 0, 0.6)
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
-                                    
-                                    Text {
-                                        text: (statisticsDialog.statistics.passRate || 0).toFixed(1) + "%"
-                                        font.pixelSize: 22
-                                        font.weight: Font.Bold
-                                        color: {
-                                            var rate = statisticsDialog.statistics.passRate || 0;
-                                            if (rate >= 90) return "#4CAF50";
-                                            if (rate >= 80) return "#8BC34A";
-                                            if (rate >= 60) return "#FFC107";
-                                            if (rate >= 40) return "#FF9800";
-                                            return "#F44336";
-                                        }
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
+                                Text {
+                                    text: "成绩总数"
+                                    font.pixelSize: 12
+                                    color: Qt.rgba(0, 0, 0, 0.6)
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                 }
-                            }
-                              // 成绩总数
-                            Rectangle {
-                                Layout.preferredWidth: 110
-                                Layout.preferredHeight: 80
-                                radius: 6
-                                color: Qt.rgba(0.98, 0.98, 1.0, 0.8)
-                                border.color: Qt.rgba(0, 0, 0, 0.1)
                                 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    
-                                    Text {
-                                        text: "成绩总数"
-                                        font.pixelSize: 12
-                                        color: Qt.rgba(0, 0, 0, 0.6)
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
-                                    
-                                    Text {
-                                        text: statisticsDialog.statistics.totalScores || 0
-                                        font.pixelSize: 22
-                                        font.weight: Font.Bold
-                                        color: accentColor
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                    }
+                                Text {
+                                    text: statisticsDialog.statistics.totalScores || 0
+                                    font.pixelSize: 22
+                                    font.weight: Font.Bold
+                                    color: accentColor
+                                    anchors.horizontalCenter: parent.horizontalCenter
                                 }
                             }
                         }
                     }
                 }
+            }
+            
+            // 按科目统计
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: 8
+                color: Qt.rgba(0.97, 0.97, 0.99, 1.0)
+                border.color: borderColor
+                border.width: 1
                 
-                // 按科目统计卡片
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    radius: 8
-                    color: Qt.rgba(0.97, 0.97, 0.99, 1.0)
-                    border.color: borderColor
-                    border.width: 1
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 15
+                    spacing: 10
                     
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 15
-                        spacing: 10
+                    Text {
+                        text: "按科目统计"
+                        font.pixelSize: 18
+                        font.weight: Font.Bold
+                        color: textColor
+                    }
+                    
+                    ListView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
                         
-                        Text {
-                            text: "按科目统计"
-                            font.pixelSize: 18
-                            font.weight: Font.Bold
-                            color: textColor
+                        model: {
+                            var subjectStatsModel = [];
+                            var subjects = statisticsDialog.statistics.subjects || {};
+                            
+                            for (var subject in subjects) {
+                                if (subjects.hasOwnProperty(subject)) {
+                                    subjectStatsModel.push({
+                                        subject: subject,
+                                        stats: subjects[subject]
+                                    });
+                                }
+                            }
+                            
+                            subjectStatsModel.sort(function(a, b) {
+                                return b.stats.average - a.stats.average;
+                            });
+                            
+                            return subjectStatsModel;
                         }
                         
-                        // 列表头部
-                        Rectangle {
-                            Layout.fillWidth: true
+                        header: Rectangle {
+                            width: parent.width
                             height: 40
                             color: Qt.rgba(0.95, 0.95, 0.97, 1.0)
+                            border.width: 1
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
                             
-                            RowLayout {
+                            Row {
                                 anchors.fill: parent
-                                anchors.leftMargin: 15
-                                anchors.rightMargin: 15
                                 
                                 Text {
                                     text: "科目名称"
                                     font.pixelSize: 14
                                     font.weight: Font.Medium
-                                    Layout.preferredWidth: 150
+                                    width: 150
+                                    height: parent.height
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: 10
                                 }
                                 
                                 Text {
                                     text: "人数"
                                     font.pixelSize: 14
                                     font.weight: Font.Medium
-                                    Layout.preferredWidth: 80
+                                    width: 100
+                                    height: parent.height
                                     horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                                 
                                 Text {
                                     text: "平均分"
                                     font.pixelSize: 14
                                     font.weight: Font.Medium
-                                    Layout.preferredWidth: 80
+                                    width: 100
+                                    height: parent.height
                                     horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                                 
                                 Text {
                                     text: "最高分"
                                     font.pixelSize: 14
                                     font.weight: Font.Medium
-                                    Layout.preferredWidth: 80
+                                    width: 100
+                                    height: parent.height
                                     horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                                 
                                 Text {
                                     text: "最低分"
                                     font.pixelSize: 14
                                     font.weight: Font.Medium
-                                    Layout.preferredWidth: 80
+                                    width: 100
+                                    height: parent.height
                                     horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                                 
                                 Text {
                                     text: "及格率"
                                     font.pixelSize: 14
                                     font.weight: Font.Medium
-                                    Layout.preferredWidth: 80
+                                    width: 100
+                                    height: parent.height
                                     horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
                         }
                         
-                        // 科目统计列表
-                        ListView {
-                            id: subjectStatsListView
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            clip: true
+                        delegate: Rectangle {
+                            width: parent.width
+                            height: 40
+                            color: index % 2 === 0 ? Qt.rgba(0.98, 0.98, 1.0, 1.0) : Qt.rgba(1, 1, 1, 1.0)
+                            border.width: 1
+                            border.color: Qt.rgba(0, 0, 0, 0.1)
                             
-                            model: {
-                                var subjectStatsModel = [];
-                                var subjects = statisticsDialog.statistics.subjects || {};
+                            Row {
+                                anchors.fill: parent
                                 
-                                for (var subject in subjects) {
-                                    if (subjects.hasOwnProperty(subject)) {
-                                        subjectStatsModel.push({
-                                            subject: subject,
-                                            stats: subjects[subject]
-                                        });
+                                Text {
+                                    text: modelData.subject
+                                    font.pixelSize: 14
+                                    width: 150
+                                    height: parent.height
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: 10
+                                    elide: Text.ElideRight
+                                }
+                                
+                                Text {
+                                    text: modelData.stats.count
+                                    font.pixelSize: 14
+                                    width: 100
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                                
+                                Text {
+                                    text: modelData.stats.average.toFixed(1)
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    width: 100
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    color: {
+                                        var avg = modelData.stats.average;
+                                        if (avg >= 90) return "#4CAF50";
+                                        if (avg >= 80) return "#8BC34A";
+                                        if (avg >= 70) return "#FFC107";
+                                        if (avg >= 60) return "#FF9800";
+                                        return "#F44336";
                                     }
                                 }
                                 
-                                // 按平均分降序排序
-                                subjectStatsModel.sort(function(a, b) {
-                                    return b.stats.average - a.stats.average;
-                                });
+                                Text {
+                                    text: modelData.stats.highest
+                                    font.pixelSize: 14
+                                    width: 100
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    color: "#4CAF50"
+                                }
                                 
-                                return subjectStatsModel;
+                                Text {
+                                    text: modelData.stats.lowest
+                                    font.pixelSize: 14
+                                    width: 100
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    color: modelData.stats.lowest < 60 ? "#F44336" : "#8BC34A"
+                                }
+                                
+                                Text {
+                                    text: modelData.stats.passRate.toFixed(1) + "%"
+                                    font.pixelSize: 14
+                                    width: 100
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    color: {
+                                        var rate = modelData.stats.passRate;
+                                        if (rate >= 90) return "#4CAF50";
+                                        if (rate >= 80) return "#8BC34A";
+                                        if (rate >= 60) return "#FFC107";
+                                        if (rate >= 40) return "#FF9800";
+                                        return "#F44336";
+                                    }
+                                }
                             }
+                        }
+                        
+                        // 空列表提示
+                        Rectangle {
+                            width: parent.width
+                            height: 60
+                            color: "transparent"
+                            visible: parent.count === 0
                             
-                            // 空列表提示
                             Text {
-                                anchors.centerIn: parent
                                 text: "暂无科目数据"
                                 color: Qt.rgba(0, 0, 0, 0.5)
                                 font.pixelSize: 16
-                                visible: subjectStatsListView.count === 0
-                            }
-                            
-                            // 科目统计项委托
-                            delegate: Rectangle {
-                                width: subjectStatsListView.width
-                                height: 50
-                                color: index % 2 === 0 ? Qt.rgba(0.98, 0.98, 1.0, 1.0) : Qt.rgba(1, 1, 1, 1.0)
-                                
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 15
-                                    anchors.rightMargin: 15
-                                      Text {
-                                        text: modelData.subject
-                                        font.pixelSize: 14
-                                        Layout.preferredWidth: 130
-                                        elide: Text.ElideRight
-                                    }
-                                      Text {
-                                        text: modelData.stats.count
-                                        font.pixelSize: 14
-                                        Layout.preferredWidth: 70
-                                        horizontalAlignment: Text.AlignHCenter
-                                    }
-                                      Text {
-                                        text: modelData.stats.average.toFixed(1)
-                                        font.pixelSize: 14
-                                        font.weight: Font.Medium
-                                        Layout.preferredWidth: 70
-                                        horizontalAlignment: Text.AlignHCenter
-                                        color: {
-                                            var avg = modelData.stats.average;
-                                            if (avg >= 90) return "#4CAF50";
-                                            if (avg >= 80) return "#8BC34A";
-                                            if (avg >= 70) return "#FFC107";
-                                            if (avg >= 60) return "#FF9800";
-                                            return "#F44336";
-                                        }
-                                    }
-                                      Text {
-                                        text: modelData.stats.highest
-                                        font.pixelSize: 14
-                                        Layout.preferredWidth: 70
-                                        horizontalAlignment: Text.AlignHCenter
-                                        color: "#4CAF50"
-                                    }
-                                      Text {
-                                        text: modelData.stats.lowest
-                                        font.pixelSize: 14
-                                        Layout.preferredWidth: 70
-                                        horizontalAlignment: Text.AlignHCenter
-                                        color: modelData.stats.lowest < 60 ? "#F44336" : "#8BC34A"
-                                    }
-                                      Text {
-                                        text: modelData.stats.passRate.toFixed(1) + "%"
-                                        font.pixelSize: 14
-                                        Layout.preferredWidth: 70
-                                        horizontalAlignment: Text.AlignHCenter
-                                        color: {
-                                            var rate = modelData.stats.passRate;
-                                            if (rate >= 90) return "#4CAF50";
-                                            if (rate >= 80) return "#8BC34A";
-                                            if (rate >= 60) return "#FFC107";
-                                            if (rate >= 40) return "#FF9800";
-                                            return "#F44336";
-                                        }
-                                    }
-                                }
+                                anchors.centerIn: parent
                             }
                         }
                     }
                 }
+            }
+            
+            // 关闭按钮
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
                 
-                // 操作按钮
-                RowLayout {
-                    Layout.alignment: Qt.AlignRight
-                    spacing: 10
+                Button {
+                    text: "关闭"
                     
-                    Button {
-                        text: "关闭"
-                        
-                        background: Rectangle {
-                            implicitWidth: 80
-                            implicitHeight: 36
-                            radius: 6
-                            color: Qt.rgba(0.9, 0.9, 0.9, 1.0)
-                        }
-                        
-                        contentItem: Text {
-                            text: "关闭"
-                            color: textColor
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        
-                        onClicked: {
-                            statisticsDialog.close()
-                        }
+                    background: Rectangle {
+                        implicitWidth: 80
+                        implicitHeight: 36
+                        radius: 6
+                        color: Qt.rgba(0.9, 0.9, 0.9, 1.0)
                     }
-                }            }
+                    
+                    contentItem: Text {
+                        text: "关闭"
+                        color: textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    
+                    onClicked: {
+                        statisticsDialog.close()
+                    }
+                }
+            }
         }
     }
-}
 }
