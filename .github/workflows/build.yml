@@ -15,7 +15,7 @@ jobs:
           - os: windows-latest
             name: Windows
             extension: .exe
-            build_script: build.py
+            build_script: build_windows.py
           - os: macos-latest
             name: macOS
             extension: .app

@@ -65,8 +65,13 @@ def main():
     print(f"执行命令: {' '.join(cmd)}")
     
     try:
-        # 执行打包命令
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
+        # 执行打包命令 - 修复Windows编码问题
+        if sys.platform.startswith('win'):
+            # Windows系统使用系统默认编码
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='gbk', errors='ignore')
+        else:
+            # 其他系统使用UTF-8
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
         print("✓ 打包成功！")
         
         # 检查输出文件
