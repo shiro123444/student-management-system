@@ -19,7 +19,7 @@ jobs:
           - os: macos-latest
             name: macOS
             extension: .app
-            build_script: build_mac.py
+            build_script: build_mac_fixed.py
 
     steps:
     - name: 检出代码
