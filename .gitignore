@@ -1,0 +1,29 @@
+# 在 d:\3 目录下创建 .gitignore 文件
+# 在文件中添加以下内容
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+*.db
+*.sqlite3
+*.bak
+.env
+.venv
+venv/
+ENV/
+.vscode/
