@@ -1,60 +1,313 @@
-# 学生管理系统（可编辑版）
+# Educational QA Bot
 
-这是一个基于PyQt5和QML的学生管理系统，支持直接在详情页面编辑学生信息，以及管理学生的成绩。
+An AI-powered educational question-answering system built with modern web technologies and advanced retrieval-augmented generation (RAG) capabilities.
 
-## 功能特点
+## 🎯 Overview
 
-1. **直接编辑学生信息**：
-   - 点击学生列表中的任何学生，打开详情页面后可以直接点击"编辑"按钮进入编辑模式
-   - 在编辑模式中可以修改学生的所有基本信息，包括学号、姓名、性别、年龄和院系
-   - 编辑完成后点击"保存更改"按钮保存，或点击"取消编辑"返回详情模式
+This educational QA bot provides intelligent answers to educational questions using a combination of:
+- **FastAPI backend** with RAG pipeline
+- **Vue 3 frontend** with accessibility features
+- **Knowledge graph** storage (Neo4j)
+- **Vector search** capabilities (Milvus)
+- **Docker-based** infrastructure
 
-2. **成绩管理**：
-   - 可以为每个学生添加多门课程的成绩
-   - 支持编辑和删除已有成绩
-   - 自动计算平均成绩和等级
-   - 在学生列表中显示课程数量
+## 🚀 Features
 
-3. **搜索功能**：
-   - 可以通过学号、姓名或院系搜索学生
+### For Students & Educators
+- **Intelligent Q&A**: Ask questions on any educational topic
+- **Source Citations**: Get references for all answers
+- **Follow-up Suggestions**: Discover related topics
+- **Conversation History**: Track your learning journey
 
-4. **美观的用户界面**：
-   - 采用现代化UI设计
-   - 提供视觉反馈，如成绩颜色根据得分变化
-   - 简洁直观的操作流程
+### Accessibility Features
+- **High Contrast Mode**: Enhanced visibility
+- **Text-to-Speech**: Audio reading of responses
+- **Large Text Support**: Improved readability
+- **Keyboard Navigation**: Full keyboard accessibility
+- **Screen Reader Support**: ARIA labels and announcements
 
-## 使用方法
+### For Administrators
+- **Content Ingestion**: Upload educational materials
+- **Analytics Dashboard**: Track usage and performance
+- **Export Reports**: Generate usage and knowledge gap reports
+- **Knowledge Graph Visualization**: Explore content relationships
 
-1. 运行系统：
+## 🏗️ Architecture
+
+### Backend Components
+- **FastAPI** application with async support
+- **RAG Pipeline** with retrieval, reranking, and context management
+- **Neo4j** for knowledge graph storage
+- **Milvus** for vector similarity search
+- **Redis** for caching and session management
+
+### Frontend Components
+- **Vue 3** with TypeScript and Composition API
+- **Vite** for fast development and building
+- **Accessible UI** with WCAG 2.1 AA compliance
+- **Responsive Design** for all devices
+
+## 🛠️ Quick Start
+
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
+
+### Using Docker (Recommended)
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/shiro123444/student-management-system.git
+   cd student-management-system
    ```
-   python student_manager.py
+
+2. **Start the application**
+   ```bash
+   cd infra/docker
+   docker-compose up -d
    ```
 
-2. 添加学生：
-   - 点击界面上方的"添加学生"按钮
-   - 填写学生信息和初始成绩（可选）
-   - 点击"保存"按钮
+3. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+   - Neo4j Browser: http://localhost:7474
+   - MinIO Console: http://localhost:9001
 
-3. 查看和编辑学生信息：
-   - 点击学生列表中的任何学生，打开详情页面
-   - 点击"编辑"按钮进入编辑模式
-   - 修改信息后点击"保存更改"按钮
+### Local Development
 
-4. 管理成绩：
-   - 在学生详情页中，点击"添加成绩"按钮添加新成绩
-   - 点击成绩项旁边的"编辑"按钮修改现有成绩
-   - 点击成绩项旁边的"删除"按钮删除成绩
+#### Backend Setup
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-5. 删除学生：
-   - 在学生详情页面，点击"删除"按钮
-   - 在确认对话框中再次点击"删除"确认操作
+# Install dependencies
+pip install -r requirements.txt
 
-## 系统要求
+# Set up environment
+cp .env.example .env
+# Edit .env with your configuration
 
-- Python 3.6+
-- PyQt5
-- SQLite3
+# Run development server
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-## 数据存储
+#### Frontend Setup
+```bash
+# Install dependencies
+cd frontend
+npm install
 
-系统使用SQLite数据库存储学生信息，数据库文件为`students.db`。
+# Set up environment
+cp .env.example .env
+# Edit .env with your configuration
+
+# Run development server
+npm run dev
+```
+
+## 📚 API Documentation
+
+### Core Endpoints
+
+#### Health Check
+```http
+GET /api/health
+```
+
+#### Chat
+```http
+POST /api/chat
+Content-Type: application/json
+
+{
+  "query": "What is machine learning?",
+  "session_id": "optional-session-id",
+  "include_sources": true,
+  "max_sources": 3
+}
+```
+
+#### File Ingestion
+```http
+POST /api/ingest/file
+Content-Type: multipart/form-data
+
+file: <file>
+document_type: "educational_content"
+metadata: "{\"subject\": \"computer_science\"}"
+```
+
+#### Export Reports
+```http
+POST /api/export/report?report_type=usage&format=json
+```
+
+For detailed API documentation, visit http://localhost:8000/docs when running the application.
+
+## 🧪 Testing
+
+### Backend Tests
+```bash
+cd backend
+pytest tests/ -v --cov=app
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm run test
+npm run type-check
+npm run lint
+```
+
+### Integration Tests
+```bash
+cd infra/docker
+docker-compose up -d
+# Run integration test scripts
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+#### Backend (.env)
+```env
+# API Configuration
+HOST=0.0.0.0
+PORT=8000
+DEBUG=false
+
+# Database Configuration
+NEO4J_URI=neo4j://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=password
+
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+
+# External APIs
+OPENAI_API_KEY=your-openai-api-key
+```
+
+#### Frontend (.env)
+```env
+VITE_API_BASE_URL=http://localhost:8000
+VITE_APP_TITLE="Educational QA Bot"
+VITE_ENABLE_TTS=true
+```
+
+## 📊 Monitoring & Analytics
+
+### Health Monitoring
+- Application health: `/api/health`
+- System metrics: CPU, memory, disk usage
+- Database connectivity checks
+
+### Usage Analytics
+- Query patterns and frequency
+- Response quality metrics
+- User interaction tracking
+- Knowledge gap identification
+
+## 🚀 Deployment
+
+### Production Deployment
+
+1. **Build and push Docker images**
+   ```bash
+   docker build -t educational-qa-backend -f backend/Dockerfile .
+   docker build -t educational-qa-frontend -f frontend/Dockerfile ./frontend
+   ```
+
+2. **Deploy with Docker Compose**
+   ```bash
+   cd infra/docker
+   docker-compose -f docker-compose.yml up -d
+   ```
+
+3. **Set up reverse proxy** (Nginx/Traefik)
+4. **Configure SSL certificates**
+5. **Set up monitoring** (Prometheus/Grafana)
+
+### Scaling Considerations
+- **Horizontal scaling**: Multiple API instances behind load balancer
+- **Database scaling**: Neo4j clustering, Milvus sharding
+- **CDN integration**: Static asset distribution
+- **Caching layers**: Redis clustering
+
+## 🤝 Contributing
+
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+### Code Standards
+- **Python**: Black formatting, flake8 linting, mypy type checking
+- **TypeScript**: ESLint, Prettier formatting
+- **Commits**: Conventional commit messages
+- **Documentation**: Update relevant docs
+
+### Running Quality Checks
+```bash
+# Backend
+black backend/app --check
+flake8 backend/app
+mypy backend/app
+pytest backend/tests/
+
+# Frontend
+npm run lint
+npm run type-check
+npm run build
+```
+
+## 📝 Documentation
+
+- **API Documentation**: Available at `/docs` endpoint
+- **Architecture Guide**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Knowledge Graph Design**: [docs/KNOWLEDGE_GRAPH_DESIGN.md](docs/KNOWLEDGE_GRAPH_DESIGN.md)
+- **Deployment Guide**: Coming soon
+
+## 🛡️ Security
+
+### Security Features
+- **Input sanitization**: XSS prevention
+- **Rate limiting**: API abuse prevention
+- **CORS configuration**: Cross-origin protection
+- **Content Security Policy**: Script injection prevention
+
+### Data Privacy
+- **Query anonymization**: PII removal from logs
+- **Session isolation**: User data separation
+- **Secure storage**: Encrypted sensitive data
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **FastAPI**: Modern Python web framework
+- **Vue.js**: Progressive JavaScript framework
+- **Neo4j**: Graph database platform
+- **Milvus**: Vector similarity search engine
+- **OpenAI**: Language model capabilities
+
+## 📞 Support
+
+For questions and support:
+- **Issues**: GitHub Issues
+- **Discussions**: GitHub Discussions
+- **Documentation**: In-app help and guides
+
+---
+
+**Educational QA Bot** - Empowering learning through intelligent question answering 🎓
